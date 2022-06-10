@@ -1,0 +1,11 @@
+#Importando as bibliotecas necessárias
+from pandas_datareader import data as web
+import pandas as pd
+import matplotlib.pyplot as plt
+
+#Pegando a cotação e plotando o gráfico
+cotacao_brpartners = web.DataReader('BRBI11.SA', data_source='yahoo', start="01-01-2020", end="06-09-2022")
+print(cotacao_brpartners)
+cotacao_brpartners["Adj Close"].plot()
+plt.show()
+
