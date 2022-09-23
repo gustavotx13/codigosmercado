@@ -1,0 +1,39 @@
+# Bibliotecas necessárias
+from pandas_datareader import data as pdr
+import numpy as np
+import matplotlib.pyplot as plt
+import datetime as dt
+import pandas as pd
+from scipy.optimize import minimize
+import matplotlib.ticker as mtick
+
+# Ações da carteira, desde 2015, calculando o retorno logaritmo médio, covariancia dos retornos
+lista_acoes = ["PETR4.SA", "BPAC11.SA", "SLCE3.SA", "MRFG3.SA", "AURA33.SA", "BBSE3.SA"]
+precos = pdr.get_data_yahoo(lista_acoes, dt.date(2015, 1, 1), dt.date(2022, 12, 31))['Adj Close']
+retornos = precos.pct_change().apply(lambda x: np.log(1 + x)).dropna()
+media_retornos = retornos.mean()
+matriz_cov = retornos.cov()
+
+# Fazendo 100.000 simulações, calculando o indice sharpe de cada uma delas e guardando dados como peso por ativo,
+# retorno esperado e volatilidade esperada
+numero_carteiras = 100000
+vetor_retornos_esperados = np.zeros(numero_carteiras)
+vetor_volatilidades_esperadas = np.zeros(numero_carteiras)
+vetor_sharpe = np.zeros(numero_carteiras)
+tabela_pesos = np.zeros((numero_carteiras, len(lista_acoes)))
+
+for k in range(numero_carteiras):
+    pesos = np.random.random(len(lista_acoes))
+    pesos = pesos / np.sum(pesos)
+    tabela_pesos[k, :] = pesos
+    vetor_retornos_esperados[k] = np.sum(media_retornos * pesos * 252)
+    vetor_volatilidades_esperadas[k] = np.sqrt(np.dot(pesos.T, np.dot(matriz_cov * 252, pesos)))
+    vetor_sharpe[k] = vetor_retornos_esperados[k] / vetor_volatilidades_esperadas[k]
+
+# Calculando os pesos ideais por ativo
+posicao_sharpe_maximo = vetor_sharpe.argmax()
+pesos_otimos = tabela_pesos[posicao_sharpe_maximo, :]
+pesos_otimos = [str((peso * 100).round(2)) + "%" for peso in pesos_otimos]
+
+for i, acao in enumerate(lista_acoes):
+    print(f"Peso {acao}: {pesos_otimos[i]}")
